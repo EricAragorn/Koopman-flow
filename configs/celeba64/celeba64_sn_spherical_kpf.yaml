@@ -1,0 +1,41 @@
+# Paths
+experiment_id: celeba64_sn_spherical
+save_dir: ./saved_models
+save_freq: 1
+cache_dir: ./cache
+sample_dir: ./samples
+
+# Visualization Params
+visdim: 
+  - 8
+  - 8
+visualize: True
+dataset: celeba64
+workers: 8
+
+# Model Params
+ae_load_path: null
+ae_encoding_depth: 64
+ae_groups: 1
+ae_spherical_latent: True
+
+sampler_type: kpf
+de_use_cached_features: False
+de_sample_size: 10000
+
+pf_sampling_dim: 16
+pf_reg_factor: 1.0e-9
+pf_use_compression: False
+pf_nystrom_points: 1000
+
+batch_size: 100
+epochs: 70
+lr: 0.001
+lr_epochs: 30
+lr_frac: 0.5
+log_iter: 100
+loss_type: l2
+reg_type: sn
+reg_lambda: 0.
+reg_decoder_only: False
+embedding_penalty_lambda: 0.001
