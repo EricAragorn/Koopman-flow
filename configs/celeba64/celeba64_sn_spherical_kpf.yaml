@@ -1,5 +1,5 @@
 # Paths
-experiment_id: celeba64_sn_spherical
+experiment_id: celeba64_sn_spherical_kpf
 save_dir: ./saved_models
 save_freq: 1
 cache_dir: ./cache
@@ -14,7 +14,8 @@ dataset: celeba64
 workers: 8
 
 # Model Params
-ae_load_path: null
+# ae_load_path: null
+ae_load_path: ./saved_models/celeba64_sn_spherical-ae.pth
 ae_encoding_depth: 64
 ae_groups: 1
 ae_spherical_latent: True
@@ -24,7 +25,7 @@ de_use_cached_features: False
 de_sample_size: 10000
 
 pf_sampling_dim: 16
-pf_reg_factor: 1.0e-9
+pf_reg_factor: 1.0e-6
 pf_use_compression: False
 pf_nystrom_points: 1000
 

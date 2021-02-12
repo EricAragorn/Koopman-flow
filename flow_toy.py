@@ -1,12 +1,12 @@
-import argparse
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-import numpy as np
+from tqdm import tqdm
+import argparse
 import time
 import os
-from tqdm import tqdm
 import gc
+import seaborn as sns
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -69,7 +69,7 @@ def main(args):
 
         data_t_subdir = args.sample_dir
 
-        data = sample_2d_data(data_t, args.pf_sample_size).to(device)
+        data = sample_2d_data(data_t, args.sample_size).to(device)
 
         all_data = data
         ax_data.clear()
@@ -124,23 +124,35 @@ def main(args):
 
 
         if args.density_estimator == "kpf":
-            input_kernel = NeuralKernel(3, 10000, n_layers=4, kernel_type='ntk', activation='relu')
+            input_kernel = MixRBFKernel(2, sigma=[0.15])
             output_kernel = MixRBFKernel(2, sigma=[0.4])
             prior_sample_fn = lambda size: torch.randn(size, 3)
             compression = False
+
+            preimage_methods = {
+                'wfm': WeightedMeanPreimage(),
+                'mds': MDSPreimage()
+            }
             model = KernelPFGenerator(input_kernel=input_kernel,
                                         output_kernel=output_kernel,
                                         output_samples=[data], 
-                                        labels=None, 
-                                        # preimage_module=WeightedMeanPreimage(),
-                                        preimage_module=MDSPreimage(),
+                                        labels=None,
+                                        preimage_module=preimage_methods[args.preimage_type],
                                         prior_sample_fn=prior_sample_fn, 
                                         nystrom_compression=compression, 
                                         epsilon=1e-5, 
                                         nystrom_points=1000, 
                                         p_dim=-1,
                                         device=device).to(device)
-            reference_samples = torch.rand(10000, 2) * 8 - 4 # sample from reference density
+            
+            if args.ref_density_type == "uniform":
+                reference_samples = torch.rand(10000, 2).to(device) * 8 - 4
+            elif args.ref_density_type == "composite":
+                reference_samples = torch.cat([sample_2d_data(data_t, 2000).to(device),
+                                               torch.rand(8000, 2).to(device) * 8 - 4], dim=0)
+            else:
+                raise RuntimeError
+
             density_op = model.get_density_operator(reference_samples, epsilon=1e-3)
         elif args.density_estimator == "gmm":  
             model = GMMGenerator([data], n_components=10)
@@ -154,7 +166,7 @@ def main(args):
                 return model(X).exp()
 
             batchsize = 256
-            datasize = args.pf_sample_size
+            datasize = args.sample_size
             optimizer = torch.optim.Adam(model.parameters(), 1e-2)
             scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=2000, verbose=True)
             model(data[:256]) # init actnorm
@@ -210,8 +222,11 @@ if __name__ == "__main__":
     parser.add_argument("--experiment_id", default="vanilla", type=str)
     parser.add_argument("--density_estimator", default='kpf', choices=['kpf', 'gmm', 'glow'])
     parser.add_argument("--sample_dir", default="./samples", type=str)
+    parser.add_argument("--ref_density_type", default='composite', choices=['uniform', 'composite'])
+    parser.add_argument("--preimage_type", default="wfm", choices=["wfm", "mds"], 
+                        help="Preimage type: weighted Frechet mean (wfm) or MDS-based preimage (mds)")
 
-    parser.add_argument("--pf_sample_size", default=10000, type=int)
+    parser.add_argument("--sample_size", default=10000, type=int)
     args = parser.parse_args()
 
     args.sample_dir = os.path.join(args.sample_dir, args.root, args.experiment_id)

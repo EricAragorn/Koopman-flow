@@ -19,12 +19,12 @@ ae_encoding_depth: 16
 ae_groups: 1
 ae_spherical_latent: True
 
-sampler_type: vae
+sampler_type: kpf
 de_use_cached_features: False
 de_sample_size: 10000
 
-pf_sampling_dim: 16
-pf_reg_factor: 1.0e-9
+pf_sampling_dim: 4
+pf_reg_factor: 1.0e-6
 pf_use_compression: True
 pf_nystrom_points: 4000
 

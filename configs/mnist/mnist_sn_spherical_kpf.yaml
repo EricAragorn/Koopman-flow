@@ -1,5 +1,5 @@
 # Paths
-experiment_id: mnist_sn_spherical
+experiment_id: mnist_sn_spherical_kpf
 save_dir: ./saved_models
 save_freq: 1
 cache_dir: ./cache
@@ -26,7 +26,7 @@ de_sample_size: 10000
 pf_sampling_dim: 4
 pf_reg_factor: 1.0e-6
 pf_use_compression: False
-pf_nystrom_points: 1000
+pf_nystrom_points: 4000
 
 batch_size: 100
 epochs: 100

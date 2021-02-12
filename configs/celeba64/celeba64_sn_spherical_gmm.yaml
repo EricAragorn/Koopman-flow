@@ -1,5 +1,5 @@
 # Paths
-experiment_id: celeba64_sn_spherical_gmm_fewsample
+experiment_id: celeba64_sn_spherical_gmm
 save_dir: ./saved_models
 save_freq: 1
 cache_dir: ./cache
@@ -14,8 +14,7 @@ dataset: celeba64
 workers: 8
 
 # Model Params
-# ae_load_path: null
-ae_load_path: ./saved_models/celeba64_sn_spherical-ae.pth
+ae_load_path: null
 ae_encoding_depth: 64
 ae_groups: 1
 ae_spherical_latent: True

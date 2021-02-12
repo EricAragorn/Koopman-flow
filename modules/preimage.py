@@ -86,8 +86,6 @@ class MDSPreimage(nn.Module):
         inds = dist_nearest.indices
         weight = dist_nearest.values
 
-        print(weight)
-
         n, c = y.shape
         y_nearest = y.unsqueeze(0).expand(b, n, c).gather(1, inds.unsqueeze(-1).expand(b, topk, c))
         y_mean = y_nearest.mean(dim=1)

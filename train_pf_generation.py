@@ -56,13 +56,8 @@ def train_ae(ae, train_loader, epochs, lr, lr_epochs, lr_frac, args, device=torc
 
         criterion = nll_loss
 
-    if args.ae_supervision:
-        cls_ae_model = nn.DataParallel(AEClassifierWrapper(ae, args.ae_classes)).to(device)
-        cls_criterion = nn.CrossEntropyLoss().to(device)
-        optim = torch.optim.Adam(cls_ae_model.parameters(), lr=lr)
-    else:
-        parallel_ae = nn.DataParallel(ae).to(device)
-        optim = torch.optim.Adam(parallel_ae.parameters(), lr=lr)
+    parallel_ae = nn.DataParallel(ae).to(device)
+    optim = torch.optim.Adam(parallel_ae.parameters(), lr=lr)
 
     lr_lambda = lambda epoch: np.power(lr_frac, int(epoch) // lr_epochs)
     scheduler = torch.optim.lr_scheduler.LambdaLR(optim, lr_lambda)
@@ -74,17 +69,10 @@ def train_ae(ae, train_loader, epochs, lr, lr_epochs, lr_frac, args, device=torc
             X = pre_process(X).float().to(device)
             y = y.to(device)
 
-            if args.ae_supervision:
-                reconstruction, embeddings, logits = cls_ae_model(X)
-                rec_loss = criterion(reconstruction, X)
-                cls_loss = cls_criterion(logits, y)
-                loss = rec_loss + args.ae_supervision_weight * cls_loss
-                tqdm_postfix = {'Rec loss': rec_loss.item(), 'Cls loss': cls_loss.item()}
-            else:
-                reconstruction, embeddings = parallel_ae(X)
-                rec_loss = criterion(reconstruction, X)
-                loss = rec_loss
-                tqdm_postfix = {'Rec loss': rec_loss.item()}
+            reconstruction, embeddings = parallel_ae(X)
+            rec_loss = criterion(reconstruction, X)
+            loss = rec_loss
+            tqdm_postfix = {'Rec loss': rec_loss.item()}
 
             # Regularization loss for l2/gradient penalty
             reg_loss = 0.
@@ -233,6 +221,45 @@ def main(args):
 
     topk = 5
 
+    def eval_model(element, model):
+        latent_list = []
+        with torch.no_grad():
+            for i in range(50):
+                latent, latent_inds = model.sample(100, topk)
+                latent_list.append(latent)
+        _tmp = [torch.cat(l, dim=0) for l in zip(*latent_list)]
+        all_latent = torch.cat([_t.view(_t.size(0), -1) for _t in _tmp], dim=-1)
+        mmd_score = poly_mmd(all_y, all_latent, deg=3)
+        print("{}, MMD:{:f}".format(element, mmd_score.item()))
+        return mmd_score
+
+    model = GMMGenerator(latent_samples=features, n_components=10, device=device)
+    baseline_score = eval_model('Baseline', model)
+
+    best_sig = -1
+    best_score = 10
+    for _sig in sigma_search_list:
+        input_kernel = NeuralKernel(latent_dim, 10000, n_layers=8, kernel_type='ntk', activation='relu')
+        output_kernel = MixRBFKernel(latent_dim, [_sig])
+        
+        with torch.no_grad():
+            model = KernelPFGenerator(input_kernel=input_kernel,
+                                        output_kernel=output_kernel,
+                                        output_samples=features,
+                                        preimage_module=GeodesicInterpPreimage() if args.ae_spherical_latent else WeightedMeanPreimage(),
+                                        # preimage_module=MDSPreimage(),
+                                        spherical=args.ae_spherical_latent,
+                                        labels=None if ignore_labels else labels, 
+                                        nystrom_compression=args.pf_use_compression, 
+                                        nystrom_points=args.pf_nystrom_points,
+                                        epsilon=args.pf_reg_factor, 
+                                        p_dim=args.pf_sampling_dim, 
+                                        device=device).to(device)
+        score = eval_model(_sig, model)
+        if score < best_score:
+            best_sig = _sig
+            best_score = score
+
     def data_batch_iterator(features):
         datasize = len(features_cat)
         batchsize = 64
@@ -245,7 +272,7 @@ def main(args):
     start = time.time()
     if args.sampler_type == "kpf":
         input_kernel = NeuralKernel(args.pf_sampling_dim, 10000, n_layers=8, kernel_type='ntk', activation='erf')
-        output_kernel = MixRBFKernel(latent_dim, [0.3])
+        output_kernel = MixRBFKernel(latent_dim, [best_sig])
 
         model = KernelPFGenerator(input_kernel=input_kernel,
                                     output_kernel=output_kernel,

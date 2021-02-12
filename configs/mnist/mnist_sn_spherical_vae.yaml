@@ -1,5 +1,5 @@
 # Paths
-experiment_id: mnist_sn_spherical_nystrom
+experiment_id: mnist_sn_spherical_vae
 save_dir: ./saved_models
 save_freq: 1
 cache_dir: ./cache
@@ -19,14 +19,9 @@ ae_encoding_depth: 16
 ae_groups: 1
 ae_spherical_latent: True
 
-sampler_type: kpf
+sampler_type: vae
 de_use_cached_features: False
 de_sample_size: 10000
-
-pf_sampling_dim: 16
-pf_reg_factor: 1.0e-9
-pf_use_compression: True
-pf_nystrom_points: 4000
 
 batch_size: 100
 epochs: 100

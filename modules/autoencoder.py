@@ -118,8 +118,7 @@ class BaseAE(nn.Module):
                 NegPad2d((0, 1, 0, 1)),
                 nn.Tanh()
             )
-
-        self.depths = depths
+            
         self.latent_fn = None
         self.mid_dim = np.prod(self.mid_shape)
 

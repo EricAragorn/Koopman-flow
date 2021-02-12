@@ -1,5 +1,5 @@
 # Paths
-experiment_id: celeba64_sn_spherical_gmm_fewsample
+experiment_id: mnist_sn_spherical_gmm
 save_dir: ./saved_models
 save_freq: 1
 cache_dir: ./cache
@@ -10,28 +10,23 @@ visdim:
   - 8
   - 8
 visualize: True
-dataset: celeba64
+dataset: mnist
 workers: 8
 
 # Model Params
 ae_load_path: null
-ae_encoding_depth: 64
+ae_encoding_depth: 16
 ae_groups: 1
 ae_spherical_latent: True
 
 sampler_type: gmm
 de_use_cached_features: False
-de_sample_size: 100
-
-pf_sampling_dim: 16
-pf_reg_factor: 1.0e-9
-pf_use_compression: False
-pf_nystrom_points: 1000
+de_sample_size: 10000
 
 batch_size: 100
-epochs: 70
+epochs: 100
 lr: 0.001
-lr_epochs: 30
+lr_epochs: 40
 lr_frac: 0.5
 log_iter: 100
 loss_type: l2
