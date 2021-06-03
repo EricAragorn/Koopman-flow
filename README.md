@@ -1,4 +1,4 @@
-# Official repository for Density Approximation in Deep Generative Models with Kernel Transfer Operators
+# Official repository for Distribution Matching in Deep Generative Models with Kernel Transfer Operators
 Required packages: PyTorch (1.5+), numpy, jax, neural-tangent, scikit-learn, scikit-image, tqdm, matplotlib, visdom (for visualization)
 
 Due to the use of mixed PyTorch and jax, the code is currently only supported on machines with at least 2 gpus if neural tangent kernel is used (GPU 0 for closed-form kernel computation in jax, and GPU 1 for other PyTorch operations). 
